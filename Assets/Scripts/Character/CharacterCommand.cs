@@ -1,11 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class CharacterCommand
 {
-    protected CharacterManager SelfGroup { get; set; }
-    protected CharacterManager Target { get; set; }
+    protected CharacterManager self { get; set; }
+    protected Health Target { get; set; }
     public virtual void DoCommand()
     {
         
@@ -15,69 +16,83 @@ public abstract class CharacterCommand
     {
         //SelfGroup.TryAttackUnit(target);
     }
+    public virtual bool CheckCanCancel()
+    {
+        return false;
+    }
 }
 
 public class AttackCommand : CharacterCommand
 {
-    public AttackCommand(CharacterManager paramSelf, CharacterManager paramTarget)
+    private float attackRadius = 2f;
+    public AttackCommand(CharacterManager _self, CharacterManager _target)
     {
-        SelfGroup = paramSelf;
-        Target = paramTarget;
+        self = _self;
+        Target = _target.health;
         DoCommand();
     }
     public override void DoCommand()
     {
-        Debug.Log("AttackCommand " + SelfGroup.name);
-
-        //if (Target.units.Count > 0)
-        //{
-        //    for (int i = 0; i < Target.units.Count; i++)
-        //    {
-        //        if (Target.units[i] != null)
-        //        {
-        //            SelfGroup.MoveGroupToPoint3D(Target.units[i].transform.position);
-        //            return;
-        //        }
-        //    }
-
-        //}
+        if ( (Target.transform.position - self.transform.position).magnitude < attackRadius)
+        {
+            self.Attack(Target);
+        }
+        else
+        {
+            self.MoveTo(Target.transform);
+        }
     }
 
+    public override bool CheckCanCancel()
+    {
+        if (Target == null) return true;
+        return false;
+    }
 }
 public class MoveCommand : CharacterCommand
 {
-    public Vector3 NewPosition { get; set; }
-    public Vector3 GroupOffset { get; set; }
-    public MoveCommand(CharacterManager paramGroup, Vector3 paramNewPosition, Vector3 paramGroupOffset)
+    public List<Vector3> path { get; set; }
+    public MoveCommand(CharacterManager _self, List<Vector3> _path)
     {
-        SelfGroup = paramGroup;
-        NewPosition = paramNewPosition;
-        GroupOffset = paramGroupOffset;
-
-       // SelfGroup.MoveGroupToPoint2D(NewPosition, GroupOffset);
+        self = _self;
+        path = _path;
+        DoCommand();
+    }
+    public MoveCommand(CharacterManager _self, Vector3 point)
+    {
+        path = new List<Vector3>
+        {
+            point
+        };
+        self = _self;
         DoCommand();
     }
 
     public override void DoCommand()
     {
-        //if (SelfGroup.CheckStopped())
-        //{
-        //    SelfGroup.command = new StopCommand(SelfGroup);
-        //}
+        self.NoAttack();
+        self.MoveTo(path[0]);
+    }
+    public override bool CheckCanCancel()
+    {
+        if ((path[0] - self.transform.position).magnitude < 0.2f) return true;
+        return false;
     }
 }
 public class StopCommand : CharacterCommand
 {
     public Vector3 NewPosition { get; set; }
     public Vector3 GroupOffset { get; set; }
-    public StopCommand(CharacterManager paramSelfGroup)
+    public StopCommand(CharacterManager _self)
     {
-        SelfGroup = paramSelfGroup;
+        self = _self;
         DoCommand();
     }
 
     public override void DoCommand()
     {
+        self.Stop();
+        self.NoAttack();
     }
 
 }
@@ -86,8 +101,8 @@ public class PursueCommand : CharacterCommand
 {
     public PursueCommand(CharacterManager paramGroup, CharacterManager paramTarget)
     {
-        SelfGroup = paramGroup;
-        Target = paramTarget;
+        self = paramGroup;
+        Target = paramTarget.health;
 
         DoCommand();
     }
@@ -109,18 +124,16 @@ public class PursueCommand : CharacterCommand
 }
 public class ProtectionCommand : CharacterCommand
 {
-    public ProtectionCommand(CharacterManager paramGroup, CharacterManager paramTarget)
+    public ProtectionCommand(CharacterManager paramGroup, CharacterManager _target)
     {
-        SelfGroup = paramGroup;
-        Target = paramTarget;
+        self = paramGroup;
+        Target = _target.health;
 
         DoCommand();
     }
 
     public override void DoCommand()
     {
-        Debug.Log("PursueCommand " + SelfGroup.name);
-
         //if (Target.units.Count > 0)
         //{
         //    for (int i = 0; i < Target.units.Count; i++)
@@ -134,4 +147,110 @@ public class ProtectionCommand : CharacterCommand
         //}
     }
 }
+public class GuardCommand : CharacterCommand
+{
+    private float changeTime;
+    private float maxChangeTime = 1f;
+    public GuardCommand(CharacterManager _self)
+    {
+        self = _self;
+        DoCommand();
+    }
 
+    public override void DoCommand()
+    {
+        changeTime += Time.deltaTime;
+        if (changeTime > maxChangeTime)
+        {
+            changeTime = 0;
+            Target = self.FindTarget();
+        }
+        if (Target != null)
+        {
+            self.Attack(Target);
+        }
+        else
+        {
+            self.NoAttack();
+        }
+    }
+
+
+}
+
+public class RushCommand : CharacterCommand
+{
+    private List<Vector3> path;
+    private float changeTime;
+    private float maxChangeTime = 0.5f;
+    private float distance;
+    private float trigerDistance = 0.3f;
+    public RushCommand(CharacterManager _self, List<Vector3> _path)
+    {
+        path = _path;
+        self = _self;
+        DoCommand();
+    }
+    public RushCommand(CharacterManager _self, Vector3 point)
+    {
+        path = new List<Vector3>
+        {
+            point
+        };
+        self = _self;
+        DoCommand();
+    }
+    public override void DoCommand()
+    {
+        if (path.Count < 1) return;
+         changeTime += Time.deltaTime;
+        if (changeTime > maxChangeTime)
+        {
+            changeTime = 0;
+            Target = self.FindTarget();
+        }
+        if (Target != null)
+        {
+            self.Attack(Target);
+        }
+        else
+        {
+            self.MoveTo(path[0]);
+        }
+    }
+
+
+    public override bool CheckCanCancel()
+    {
+        InPoint();
+        if (distance == 0) return true;
+        if(distance < 4f)
+        {
+            RaycastHit[] hits = Physics.RaycastAll(self.transform.position, path[0] - self.transform.position, 100.0F);
+            Collider[] lineUnits = new Collider[hits.Length];
+            for (int i = 0; i < hits.Length; i++)
+            {
+                lineUnits[i] = hits[i].collider;
+            }
+            List<Health> allies = self.CheckAllies(lineUnits);
+            float maxDistance = allies.Count * 1f;
+            if (distance < maxDistance) return true;
+        }
+        return false;
+    }
+
+    private void InPoint()
+    {
+        distance = 0;
+        if (path.Count < 1) return;
+        Vector3 direction = (path[0] - self.transform.position);
+        direction.y = direction.y > 0 ? direction.y : 0;
+        distance = direction.magnitude;
+        if (distance < trigerDistance)
+        {
+            path.RemoveAt(0);
+            InPoint();
+        }
+    }
+
+}

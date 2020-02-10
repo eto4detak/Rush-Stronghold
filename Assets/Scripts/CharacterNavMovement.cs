@@ -88,13 +88,13 @@ public class CharacterNavMovement : MonoBehaviour, IMovable
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, turnSmoothing * Time.deltaTime);
     }
 
-    public void SetTargetMovement(Transform target)
+    public void MoveTo(Transform target)
     {
         if (target) MoveToPoint(target.position);
         else Stopping(out float speed);
     }
 
-    public void SetTargetMovement(Vector3 target)
+    public void MoveTo(Vector3 target)
     {
         throw new System.NotImplementedException();
     }

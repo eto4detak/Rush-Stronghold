@@ -2,45 +2,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CharacterAttack : MonoBehaviour
+public class CharacterAttack : MonoBehaviour, IAttack
 {
     public bool isAttack = false;
     public Animator animator;
+    public AttackType attackType;
+
     private readonly int hashAttackPara = Animator.StringToHash("Attack");
     private Health target;
     private float rotSpeed = 5f;
+    private CharacterManager owner;
+
     private void Awake()
     {
-
+        owner = GetComponent<CharacterManager>();
     }
-
-    //private void OnTriggerStay(Collider other)
-    //{
-    //    if (other.gameObject != gameObject)
-    //    {
-    //        var enemy = other.GetComponent<CharacterManager>();
-    //        if (enemy != null)
-    //        {
-    //            Debug.Log(name + "   " + enemy.name);
-    //            Attack();
-    //            target = enemy.health;
-    //            return;
-    //        }
-    //        Stop();
-    //    }
-    //    target = null;
-    //}
 
     private void Update()
     {
         if (target)
         {
-            Attacking(target);
+            Attacking();
         }
     }
 
 
-    public void Stop()
+    public void NoAttack()
     {
         target = null;
         isAttack = false;
@@ -57,8 +44,7 @@ public class CharacterAttack : MonoBehaviour
     {
         if (target)
         {
-            target.TakeDamage(10f);
-            Debug.Log("EventAttack");
+            attackType.Attack(target, owner.health);
         }
         else
         {
@@ -73,14 +59,15 @@ public class CharacterAttack : MonoBehaviour
 
     private void LookAtTarget()
     {
+        Vector3 attackDirection = target.transform.position - transform.position;
         transform.rotation = Quaternion.Slerp(transform.rotation,
-            Quaternion.LookRotation(target.transform.position - transform.position), rotSpeed * Time.deltaTime);
+            Quaternion.LookRotation( new Vector3(attackDirection.x, 0, attackDirection.z)), rotSpeed * Time.deltaTime);
     }
 
-    private void Attacking(Health _target)
+    private void Attacking()
     {
         animator.SetBool(hashAttackPara, isAttack);
-        transform.LookAt(target.transform);
+        LookAtTarget();
     }
 
 }

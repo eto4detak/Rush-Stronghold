@@ -27,6 +27,11 @@ public class CanvasTripod : MonoBehaviour
     {
         UpdateRatation();
         UpdateValues();
+        if (health.currentHealth == 0)
+        {
+            healthBarPivot.gameObject.SetActive(false);
+            enabled = false;
+        }
     }
 
     private void UpdateValues()

@@ -20,7 +20,6 @@ public class CharacterMovement : MonoBehaviour, IMovable
     private const float stopDistanceProportion = 0.1f;
     private const float navMeshSampleDistance = 4f;
 
-
     private Vector3 oldPosition;
     private Vector3 moveVector;
 
@@ -45,6 +44,23 @@ public class CharacterMovement : MonoBehaviour, IMovable
 
         oldPosition = transform.position;
     }
+    public void MoveTo(Transform newtarget)
+    {
+        target = newtarget;
+    }
+    public void MoveTo(Vector3 target)
+    {
+
+    }
+    public void SetSpeed(float speed)
+    {
+
+    }
+
+    public void Stop()
+    {
+
+    }
 
     private void Move()
     {
@@ -56,19 +72,6 @@ public class CharacterMovement : MonoBehaviour, IMovable
     {
         Vector3 direct = Vector3.RotateTowards(transform.forward, moveVector, 0.1f, 0);
         transform.rotation = Quaternion.LookRotation(direct);
-    }
-
-    public void SetTargetMovement(Transform newtarget)
-    {
-        target = newtarget;
-    }
-    public void SetTargetMovement(Vector3 target)
-    {
-
-    }
-    public void SetSpeed(float speed)
-    {
-        
     }
 
 
