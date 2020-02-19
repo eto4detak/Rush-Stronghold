@@ -20,10 +20,13 @@ public class MouseManager : MonoBehaviour
 
     private int characterLayer;
     private int pathLayer;
+    private int noPathLayer;
     private RaycastHit mouseHit;
     private float timeOldClick;
     private float timeCheckDoubleClick = 0.3f;
-    bool isDoubleClick = false;
+    private bool isDoubleClick = false;
+    private float findRadius = 1.5f;
+    private int maxWrongPath = 30;
     #region Singleton
     static protected MouseManager s_Instance;
     static public MouseManager instance { get { return s_Instance; } }
@@ -45,6 +48,7 @@ public class MouseManager : MonoBehaviour
     {
         characterLayer = LayerMask.GetMask("Character");
         pathLayer = LayerMask.GetMask("Path") & ~LayerMask.GetMask("Character");
+        noPathLayer = LayerMask.GetMask("NoPath");
     }
 
     void Update()
@@ -66,9 +70,9 @@ public class MouseManager : MonoBehaviour
             TrySelectUnit();
             if (drag)
             {
+                // double click
                 if (Time.time < timeOldClick + timeCheckDoubleClick)
                 {
-                    // double click
                     SelectGroup();
                     return;
                 }
@@ -93,9 +97,16 @@ public class MouseManager : MonoBehaviour
 
         if (drag)
         {
-            DoMouseHit(pathLayer);
-            trail.transform.position = mouseHit.point;
-            mousePath.Add(mouseHit.point);
+            DoMouseHit(noPathLayer);
+            if(mouseHit.collider == null)
+            {
+                DoMouseHit(pathLayer);
+                if (trail != null)
+                {
+                    trail.transform.position = mouseHit.point + new Vector3(0, 0.2f, 0);
+                    mousePath.Add(mouseHit.point);
+                }
+            }
         }
     }
 
@@ -108,8 +119,11 @@ public class MouseManager : MonoBehaviour
         if (mouseHit.collider == null)
         {
             DoMouseHit(-1);
-            Collider[] units = Physics.OverlapSphere(mouseHit.point, 2f, characterLayer);
-            if (units.Length > 0) selected = units[0].GetComponent<CharacterManager>();
+            Collider[] units = Physics.OverlapSphere(mouseHit.point, findRadius, characterLayer);
+            if (units.Length > 0)
+            {
+                selected = UnityExtension.GetClosest(mouseHit.point, PController.instance.playerUnits) as CharacterManager;
+            }
             else return;
         }
         else
@@ -128,31 +142,47 @@ public class MouseManager : MonoBehaviour
             trail.time = trail.time / 2;
             Destroy(trail.gameObject, trail.time);
         }
-        trail = Instantiate(prefabTrail, mouseHit.point, Quaternion.identity);
+        trail = Instantiate(prefabTrail, mouseHit.point + new Vector3(0, 0.2f, 0), Quaternion.identity);
     }
 
     private void SelectGroup()
     {
         selectedGroup = selected.GetClosestGroup(PController.instance.playerUnits);
+        for (int i = 0; i < selectedGroup.Count; i++)
+        {
+            selectedGroup[i].PlaySelected();
+        }
     }
+
     private void CreatePathCommand()
     {
-        if(selectedGroup.Count > 0 && mousePath.Count > 40)
+        if (selected == null) return;
+        int minGroupPointer = 30;
+        int minGroupLenght = 1;
+        int minSinglePointer = 10;
+        Vector3 startPoint = selected.transform.position;
+        bool isMin = mousePath.Count > minGroupPointer || UnityExtension.SumPath(mousePath) > minGroupLenght;
+
+        ImprovePath();
+        if (selectedGroup.Count > 1 && isMin)
         {
             for (int i = 0; i < selectedGroup.Count; i++)
             {
-                Vector3 offset = selectedGroup[i].transform.position - selected.transform.position ;
+                if (selectedGroup[i] == null) continue;
+                Vector3 offset = selectedGroup[i].transform.position - startPoint;
                 List<Vector3> gPath = new List<Vector3>(mousePath);
                 for (int g = 0; g < gPath.Count; g++)
                 {
                     gPath[g] += offset;
                 }
-                selectedGroup[i].command = new RushCommand(selectedGroup[i], gPath);
+                selectedGroup[i].SetPathCommand(gPath);
             }
+            
         }
-        else if(mousePath.Count > 10)
+        else if(mousePath.Count > minSinglePointer)
         {
-            selected.command = new RushCommand(selected, mousePath);
+
+            selected.SetPathCommand(mousePath);
         }
         selectedGroup.Clear();
         selected = null;
@@ -202,18 +232,36 @@ public class MouseManager : MonoBehaviour
             }
         }
     }
+    private void ImprovePath()
+    {
+        int indexRemove = -1;
+        Vector3 direction = Vector3.zero;
+        for (int i = 0; i < maxWrongPath && i < mousePath.Count; i++)
+        {
+            direction = (mousePath[i] - selected.transform.position);
+            direction.y = direction.y > 0 ? direction.y : 0;
+            if (direction.magnitude < 0.5f)
+            {
+                indexRemove = i;
+            }
+        }
+        if (indexRemove > -1)
+        {
+            mousePath.RemoveRange(0, indexRemove);
+        }
+    }
 
     private void OnClickRightObject(CharacterManager target, Vector3 hitPoint)
     {
         CharacterManager selected = PController.instance.GetClosestFreePlayerUnit(hitPoint);
         if (selected != null && target.GetTeam() != selected.GetTeam())
-            selected.command = new AttackCommand(selected, target);
+            selected.Command = new AttackCommand(selected, target);
     }
 
     private void OnClickRight(Vector3 hitPoint)
     {
         CharacterManager selected = PController.instance.GetClosestFreePlayerUnit(hitPoint);
         if(selected != null)
-        selected.command = new RushCommand(selected, hitPoint);
+        selected.Command = new RushCommand(selected, hitPoint);
     }
 }

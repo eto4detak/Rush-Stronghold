@@ -16,9 +16,9 @@ public class CameraControl : MonoBehaviour
     public int rotationX = 70;
     public float maxHeight = 15;
     public float minHeight = 5;
-    public int rotationLimit = 240;
+    public int rotationLimitY = 240;
 
-    private float camRotation;
+    private float camRotationY;
     private float height;
     private float tmpHeight;
     private float h, v;
@@ -26,9 +26,9 @@ public class CameraControl : MonoBehaviour
 
     void Start()
     {
-        height = (maxHeight + minHeight) / 2;
+        height = transform.position.y;
         tmpHeight = height;
-        camRotation = rotationLimit / 2;
+        camRotationY = transform.eulerAngles.y;
         transform.position = new Vector3(transform.position.x, height, transform.position.z);
     }
 
@@ -75,8 +75,8 @@ public class CameraControl : MonoBehaviour
         if (Input.GetKey(left) || L) h = -1; else if (Input.GetKey(right) || R) h = 1; else h = 0;
         if (Input.GetKey(down) || D) v = -1; else if (Input.GetKey(up) || U) v = 1; else v = 0;
 
-        if (Input.GetKey(rotCamB)) camRotation -= 3; else if (Input.GetKey(rotCamA)) camRotation += 3;
-        camRotation = Mathf.Clamp(camRotation, 0, rotationLimit);
+        if (Input.GetKey(rotCamB)) camRotationY -= 3; else if (Input.GetKey(rotCamA)) camRotationY += 3;
+        camRotationY = Mathf.Clamp(camRotationY, -360, 360);
 
         if (Input.GetAxis("Mouse ScrollWheel") > 0)
         {
@@ -93,6 +93,6 @@ public class CameraControl : MonoBehaviour
         Vector3 direction = new Vector3(h, v, 0);
         transform.Translate(direction * speed * Time.deltaTime);
         transform.position = new Vector3(transform.position.x, height, transform.position.z);
-        transform.rotation = Quaternion.Euler(rotationX, camRotation, 0);
+        transform.rotation = Quaternion.Euler(rotationX, camRotationY, 0);
     }
 }

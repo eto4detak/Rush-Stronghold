@@ -14,7 +14,7 @@ public class Obstacle : MonoBehaviour
     private void Start()
     {
         health?.EventDie.AddListener(Die);
-        health?.TakeDamageEvent.AddListener(TakeDamage);
+        health?.EventTakeDamage.AddListener(TakeDamage);
     }
 
     private void Die()

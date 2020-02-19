@@ -4,12 +4,27 @@ using UnityEngine;
 
 public class Arrow : MonoBehaviour
 {
-    public float damage = 10f;
+    public Rigidbody rb;
+    public float liveTime = 50f;
     private bool isDamage;
+    private Vector3 oldPosition;
+    private float damage;
 
     private void Awake()
     {
-        Destroy(gameObject, 100f);
+        Destroy(gameObject, liveTime);
+        rb = GetComponent<Rigidbody>();
+    }
+
+
+    private void Update()
+    {
+        transform.LookAt(transform.position + transform.position  - oldPosition);
+        oldPosition = transform.position;
+    }
+    public void Setup(float _damage)
+    {
+        damage = _damage;
     }
 
     private void OnCollisionEnter(Collision other)
@@ -18,6 +33,7 @@ public class Arrow : MonoBehaviour
         isDamage = true;
         Health health = other.collider.GetComponent<Health>();
         if(health != null)  Hit(health);
+        rb.velocity =Vector3.zero;
         Destroy(this);
     }
 

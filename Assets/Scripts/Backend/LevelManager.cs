@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class LevelManager : MonoBehaviour
 {
-    public SaveLoad saved;
     public LevelData levelData;
     
     #region Singleton
@@ -22,16 +21,20 @@ public class LevelManager : MonoBehaviour
             return;
         }
         s_Instance = this;
-        DontDestroyOnLoad(gameObject);
         #endregion
-        saved = SaveLoad.GetInstance();
-        levelData = GetDataLevel(0);
+        levelData = GetDataLevel(SceneManager.GetActiveScene().buildIndex);
     }
-
 
     public void LoadLevel(int levelNumber)
     {
+        SaveLoad.GetInstance().pData.lastLevel = levelNumber;
+        SaveLoad.GetInstance().Save();
         levelData = GetDataLevel(levelNumber);
+        if (SaveLoad.GetInstance().pData.maxLevel < levelData.levelNumber)
+        {
+            SaveLoad.GetInstance().pData.maxLevel = levelData.levelNumber;
+            SaveLoad.GetInstance().Save();
+        }
         SceneManager.LoadScene(levelData.sceneNumber);
     }
     public void LoadNextLevel()
@@ -47,15 +50,7 @@ public class LevelManager : MonoBehaviour
 
     public LevelData GetDataLevel(int levelNumber)
     {
-        if (levelNumber == 0)
-        {
-            return new LevelData()
-            {
-                levelNumber = 0,
-                sceneNumber = 0,
-            };
-        }
-        else if (levelNumber == 1)
+        if (levelNumber <= 1)
         {
             return new LevelData()
             {
@@ -68,15 +63,23 @@ public class LevelManager : MonoBehaviour
             return new LevelData()
             {
                 levelNumber = 2,
-                sceneNumber = 1,
+                sceneNumber = 2,
+            };
+        }
+        else if (levelNumber == 3)
+        {
+            return new LevelData()
+            {
+                levelNumber = 3,
+                sceneNumber = 3,
             };
         }
         else
         {
             return new LevelData()
             {
-                levelNumber = 3,
-                sceneNumber = 1,
+                levelNumber = 4,
+                sceneNumber = 4,
             };
         }
     }

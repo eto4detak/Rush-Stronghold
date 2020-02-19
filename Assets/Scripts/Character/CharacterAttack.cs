@@ -6,21 +6,23 @@ public class CharacterAttack : MonoBehaviour, IAttack
 {
     public bool isAttack = false;
     public Animator animator;
-    public AttackType attackType;
-
     private readonly int hashAttackPara = Animator.StringToHash("Attack");
     private Health target;
     private float rotSpeed = 5f;
     private CharacterManager owner;
 
+    public AttackType AttackType { get; private set; }
+    public Health Target { get => target; private set => target = value; }
+
     private void Awake()
     {
         owner = GetComponent<CharacterManager>();
+        AttackType = GetComponent<AttackType>();
     }
 
     private void Update()
     {
-        if (target)
+        if (Target)
         {
             Attacking();
         }
@@ -29,37 +31,33 @@ public class CharacterAttack : MonoBehaviour, IAttack
 
     public void NoAttack()
     {
-        target = null;
+        Target = null;
         isAttack = false;
         animator.SetBool(hashAttackPara, isAttack);
     }
 
     public void Attack(Health newTarget)
     {
-        target = newTarget;
+        Target = newTarget;
         isAttack = true;
     }
 
     public void EventAttack()
     {
-        if (target)
+        if (Target)
         {
-            attackType.Attack(target, owner.health);
-        }
-        else
-        {
-            Debug.Log("else EventAttack");
+            AttackType.Attack(Target, owner.health);
         }
     }
 
     public void SetTarget(Health newTarget)
     {
-        target = newTarget;
+        Target = newTarget;
     }
 
     private void LookAtTarget()
     {
-        Vector3 attackDirection = target.transform.position - transform.position;
+        Vector3 attackDirection = Target.transform.position - transform.position;
         transform.rotation = Quaternion.Slerp(transform.rotation,
             Quaternion.LookRotation( new Vector3(attackDirection.x, 0, attackDirection.z)), rotSpeed * Time.deltaTime);
     }

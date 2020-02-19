@@ -33,15 +33,18 @@ public class MissionManager : MonoBehaviour
             direction.y = 0;
             if (direction.magnitude > 1f)
             {
-                freeUnits[i].command = new RushCommand(freeUnits[i], target.position );
+                freeUnits[i].Command = new RushCommand(freeUnits[i], target.position );
             }
         }
     }
-    public void SetStartingEnemyTarget(List<CharacterManager> units)
+    public void SetStartinпTarget(List<CharacterManager> units)
     {
         for (int i = 0; i < units.Count; i++)
         {
-            units[i].command = new GuardCommand(units[i]);
+           units[i].Command = new GuardCommand(units[i]);
+            //CharacterManager enemy =  UnityExtension.GetClosest(units[i].transform, PController.instance.playerUnits)
+            //    as CharacterManager;
+            //units[i].command = new AttackCommand(units[i], enemy);
         }
     }
 
@@ -49,7 +52,7 @@ public class MissionManager : MonoBehaviour
     {
         for (int i = 0; i < units.Count; i++)
         {
-            units[i].command = new StopCommand(units[i]);
+            units[i].Command = new StopCommand(units[i]);
             units[i].gameObject.SetActive(false);
         }
     }

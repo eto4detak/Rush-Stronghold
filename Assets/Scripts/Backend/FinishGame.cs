@@ -17,9 +17,25 @@ public abstract class GameFinish
 }
 public class GameWin : GameFinish
 {
+    public int star;
+
+    public GameWin(int _star = 0)
+    {
+        star = _star;
+        star = star > 0 ? star : 0;
+    }
+
     public override void FinishLevel()
     {
-        LevelManager.instance.LoadNextLevel();
+        MusicPlayer.instance.PlayWinSound();
+        SaveLoad.GetInstance().Load();
+        SaveLoad.GetInstance().pData.star += star;
+        SaveLoad.GetInstance().Save();
+        SaveLoad.GetInstance().Load();
+        GameHUD.instance.SetTotalStar(SaveLoad.GetInstance().pData.star);
+        GameHUD.instance.btnContinue.gameObject.SetActive(true);
+        //   LevelManager.instance.LoadNextLevel();
+
     }
     public override string Resulttext()
     {
@@ -31,7 +47,11 @@ public class GameOver : GameFinish
 {
     public override void FinishLevel()
     {
-        LevelManager.instance.RestartLevel();
+        MusicPlayer.instance.PlayOverGameSound();
+        GameHUD.instance.ViewBtnRestart(true);
+
+        //  LevelManager.instance.RestartLevel();
+
     }
 
 

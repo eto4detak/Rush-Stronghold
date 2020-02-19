@@ -23,12 +23,15 @@ public class SaveLoad
         {
             return s_Instance;
         }
-        return new SaveLoad();
+        s_Instance = new SaveLoad();
+        s_Instance.Load();
+        return s_Instance;
         #endregion
     }
-
-    public void Save(PlayerData toSaved)
+    
+    public void Save(PlayerData toSaved = null)
     {
+        if(toSaved == null) toSaved = pData;
         BinaryFormatter bf = new BinaryFormatter();
         FileStream file = File.Create(Application.persistentDataPath + "/savedGames.gd");
         bf.Serialize(file, toSaved);
@@ -53,4 +56,7 @@ public class PlayerData
     public int lastLevel;
     public int maxLevel;
     public int cash;
+    public int star;
+    public bool musicMute;
+    public float musicValue;
 }

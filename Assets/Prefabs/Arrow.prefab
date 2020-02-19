@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 8434892147768258742}
   - component: {fileID: 3488130022587466269}
   - component: {fileID: 5165349988712868037}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Arrow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -30,7 +30,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6581934405532466104}
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -2.23, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 30, y: 30, z: 10}
   m_Children: []
   m_Father: {fileID: 0}
@@ -123,6 +123,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damage: 10
+  liveTime: 50
 --- !u!96 &5165349988712868037
 TrailRenderer:
   serializedVersion: 2

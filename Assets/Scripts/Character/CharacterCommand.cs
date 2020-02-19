@@ -35,6 +35,7 @@ public class AttackCommand : CharacterCommand
     {
         if ( (Target.transform.position - self.transform.position).magnitude < attackRadius)
         {
+
             self.Attack(Target);
         }
         else
@@ -52,6 +53,7 @@ public class AttackCommand : CharacterCommand
 public class MoveCommand : CharacterCommand
 {
     public List<Vector3> path { get; set; }
+    private float permissibleLenght = 0.2f;
     public MoveCommand(CharacterManager _self, List<Vector3> _path)
     {
         self = _self;
@@ -70,13 +72,28 @@ public class MoveCommand : CharacterCommand
 
     public override void DoCommand()
     {
-        self.NoAttack();
+        if(self.Armament.isAttack) self.NoAttack();
         self.MoveTo(path[0]);
+
     }
     public override bool CheckCanCancel()
     {
-        if ((path[0] - self.transform.position).magnitude < 0.2f) return true;
+        CheckPath();
+        //float lenght = UnityExtension.SumPath(path);
+        if (path.Count == 0) return true;
         return false;
+    }
+
+    private void CheckPath()
+    {
+        if (path.Count == 0) return;
+        Vector3 direction = (path[0] - self.transform.position);
+        direction.y = 0;
+        if (direction.magnitude < permissibleLenght)
+        {
+            path.RemoveAt(0);
+            CheckPath();
+        }
     }
 }
 public class StopCommand : CharacterCommand
@@ -222,7 +239,7 @@ public class RushCommand : CharacterCommand
 
     public override bool CheckCanCancel()
     {
-        InPoint();
+        CheckPath();
         if (distance == 0) return true;
         if(distance < 4f)
         {
@@ -239,18 +256,56 @@ public class RushCommand : CharacterCommand
         return false;
     }
 
-    private void InPoint()
+    private void CheckPath()
     {
         distance = 0;
-        if (path.Count < 1) return;
+        if (path.Count == 0) return;
         Vector3 direction = (path[0] - self.transform.position);
         direction.y = direction.y > 0 ? direction.y : 0;
+
         distance = direction.magnitude;
         if (distance < trigerDistance)
         {
             path.RemoveAt(0);
-            InPoint();
+            CheckPath();
         }
     }
 
+}
+
+
+public class FindEnemyCommand : CharacterCommand
+{
+    private float currentTime;
+    private float maxTime = 0.5f;
+    private float distance;
+    private float trigerDistance = 0.3f;
+
+    public FindEnemyCommand(CharacterManager _self)
+    {
+        self = _self;
+        DoCommand();
+    }
+
+    public override void DoCommand()
+    {
+        currentTime -= Time.deltaTime;
+        if (currentTime <= 0)
+        {
+            currentTime = maxTime;
+            List<Health> enemies = self.FilterEnemy(Physics.OverlapSphere(self.transform.position, 40f));
+            Target = self.GetClosest(enemies) as Health;
+        }
+        if(Target != null)
+        {
+            if ((Target.transform.position - self.transform.position).magnitude < self.targetRadius)
+                self.Attack(Target);
+            else self.MoveTo(Target.transform);
+        }
+    }
+
+    public override bool CheckCanCancel()
+    {
+        return false;
+    }
 }

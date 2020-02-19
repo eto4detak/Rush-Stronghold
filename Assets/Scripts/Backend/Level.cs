@@ -1,25 +1,28 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class Level : MonoBehaviour
 {
-    public float startDelay = 3f;
+    public float startDelay = 1f;
     public float endDelay = 3f;
-    public GameObject[] spawnPoints;
-    public Text messageText;
+    public TextMeshProUGUI messageText;
     public List<VictoryPoint> victoryPoints;
+    public bool startGame;
+    public bool restartGame;
+    public bool continueGame;
 
     private int levelNumber = 0;
-    private WaitForSeconds startWait;
+    private WaitForSeconds pausetWait;
+    private WaitForSeconds oneWait;
     private WaitForSeconds endWait;
     private GameObject roundWinner;
     private GameObject gameWinner;
     private GameFinish levelResultat;
     
-    //private LevelRecord records;
     #region Singleton
     static protected Level s_Instance;
     static public Level instance { get { return s_Instance; } }
@@ -35,79 +38,123 @@ public class Level : MonoBehaviour
         }
         s_Instance = this;
         #endregion
-        startWait = new WaitForSeconds(startDelay);
+        pausetWait = new WaitForSeconds(startDelay);
+        oneWait = new WaitForSeconds(1f);
         endWait = new WaitForSeconds(endDelay);
-       // records = new LevelRecord();
     }
-
-
+    
     public void StartLevel()
     {
         levelNumber = LevelManager.instance.levelData.levelNumber;
         for (int i = 0; i < victoryPoints.Count; i++)
         {
-            victoryPoints[i].Capture.AddListener(CheckGameWin);
+            victoryPoints[i].Capture.AddListener(CheckGame);
         }
-        PController.instance.EventDeadPlayers.AddListener(SetGameOver);
         StartCoroutine(GameLoop());
     }
 
     private IEnumerator GameLoop()
     {
+        yield return StartCoroutine(LevelPausing());
         yield return StartCoroutine(LevelStarting());
         yield return StartCoroutine(LevelPlaying());
         yield return StartCoroutine(LevelEnding());
     }
+    private IEnumerator LevelPausing()
+    {
+        GameHUD.instance.ViewBtnRestart(false);
+        GMode.instance.ContinueGame();
+        GameHUD.instance.ViewLvlLabel(true);
+        CharacterManager[] allUnits = Resources.FindObjectsOfTypeAll<CharacterManager>();
+        for (int i = 0; i < allUnits.Length; i++)
+        {
+            allUnits[i].DesableUnit();
+        }
+        MainMenuManager.instance.HideMainMenu();
+        startGame = false;
+        while (!startGame)
+        {
+            
+            yield return null;
+        }
+    }
 
     private IEnumerator LevelStarting()
     {
-        //MouseManager.instance.enabled = false;
-        for (int i = 0; i < PController.instance.enemyUnits.Count; i++)
+        //for (int i = 0; i < startDelay; i++)
+        //{
+        //    ShowMessage("Starting " + ((int)startDelay - i).ToString());
+        //    yield return oneWait;
+        //}
+        yield return null;
+        List<CharacterManager> allUnits = new List<CharacterManager>(Resources.FindObjectsOfTypeAll<CharacterManager>());
+        allUnits.RemoveAll(x => x.gameObject.activeSelf == false);
+        SpawnPoint[] allSpawn = Resources.FindObjectsOfTypeAll<SpawnPoint>();
+        for (int i = 0; i < allSpawn.Length; i++)
         {
-            PController.instance.enemyUnits[i].DesableUnit();
+            allSpawn[i].SetLoop(true);
         }
-        for (int i = 0; i < PController.instance.playerUnits.Count; i++)
+        AIUnit tempAI;
+        for (int i = 0; i < allUnits.Count; i++)
         {
-            PController.instance.playerUnits[i].DesableUnit();
+            allUnits[i].EnableUnit();
         }
-        MainMenuManager.instance.HideMainMenu();
-        ShowMessage("Level " + levelNumber);
-        yield return startWait;
+        List<CharacterManager> list = new List<CharacterManager>(PController.instance.playerUnits);
+        list.RemoveAll(x => x.Command != null);
+        MissionManager.instance.SetStartinпTarget(list);
+        MissionManager.instance.SetStartinпTarget(new List<CharacterManager>(PController.instance.enemyUnits));
+        MouseManager.instance.enabled = true;
+
+        for (int i = 0; i < allUnits.Count; i++)
+        {
+            tempAI = allUnits[i].GetComponent<AIUnit>();
+            if (tempAI != null) tempAI.StartCommand();
+        }
+        HiddenMessage(string.Empty);
+        GameHUD.instance.ViewLvlLabel(false);
     }
 
     private IEnumerator LevelPlaying()
     {
-        for (int i = 0; i < PController.instance.enemyUnits.Count; i++)
-        {
-            PController.instance.enemyUnits[i].EnableUnit();
-        }
-        for (int i = 0; i < PController.instance.playerUnits.Count; i++)
-        {
-            PController.instance.playerUnits[i].EnableUnit();
-        }
-        MouseManager.instance.enabled = true;
-        MissionManager.instance.SetStartingEnemyTarget(PController.instance.enemyUnits);
-        HiddenMessage(string.Empty);
+        MusicPlayer.instance.StopFirstSound();
         while (levelResultat == null)
         {
-           /// MissionManager.instance.SetStartingPlayerTarget(PController.instance.GetPlayerFreeUnits());
+            CheckGame();
             yield return null;
         }
     }
 
     private IEnumerator LevelEnding()
     {
+        SpawnPoint[] allSpawn = Resources.FindObjectsOfTypeAll<SpawnPoint>();
+        for (int i = 0; i < allSpawn.Length; i++)
+        {
+            allSpawn[i].SetLoop(false);
+        }
         for (int i = 0; i < PController.instance.enemyUnits.Count; i++)
         {
-            PController.instance.enemyUnits[i].command = new StopCommand(PController.instance.enemyUnits[i]);
+            PController.instance.enemyUnits[i].Command = new StopCommand(PController.instance.enemyUnits[i]);
         }
         for (int i = 0; i < PController.instance.playerUnits.Count; i++)
         {
-            PController.instance.playerUnits[i].command = new StopCommand(PController.instance.playerUnits[i]);
+            PController.instance.playerUnits[i].Command = new StopCommand(PController.instance.playerUnits[i]);
         }
-        ShowMessage(levelResultat.Resulttext());
-        yield return endWait;
         levelResultat.FinishLevel();
+        restartGame = false;
+        while (true)
+        {
+            if (restartGame)
+            {
+                LevelManager.instance.RestartLevel();
+                yield break;
+            }
+            if (continueGame)
+            {
+                LevelManager.instance.LoadNextLevel();
+                yield break;
+            }
+            yield return null;
+        }
     }
 
     private string EndMessage()
@@ -150,18 +197,21 @@ public class Level : MonoBehaviour
             levelResultat = new GameOver();
     }
 
-    private void CheckGameWin()
+    private void CheckGame()
     {
-        for (int i = 0; i < victoryPoints.Count; i++)
+        if(PController.instance.enemyUnits.Count == 0)
         {
-            if (victoryPoints[i].isCapture == false) return;
+            SetGameWin();
         }
-        SetGameWin();
+        else if(PController.instance.playerUnits.Count == 0)
+        {
+            SetGameOver();
+        }
     }
 
     private void SetGameWin()
     {
-        if(levelResultat == null) levelResultat = new GameWin();
+        if(levelResultat == null) levelResultat = new GameWin(PController.instance.playerUnits.Count);
     }
 
     private void ShowMessage(string text)

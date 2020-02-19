@@ -40,5 +40,33 @@ public static class UnityExtension
         return closest;
     }
 
+    public static Component GetClosest<T>(Vector3 fromThis, List<T> stack) where T : Component
+    {
+        Component closest = null;
+        float closestDistanceSqr = Mathf.Infinity;
+        Vector3 directionToTarget;
+        for (int i = 0; i < stack.Count; i++)
+        {
+            if (stack[i] == null) continue;
+            directionToTarget = stack[i].transform.position - fromThis;
+            float dSqrToTarget = directionToTarget.sqrMagnitude;
+            if (dSqrToTarget < closestDistanceSqr)
+            {
+                closestDistanceSqr = dSqrToTarget;
+                closest = stack[i];
+            }
+        }
+        return closest;
+    }
+    public static float SumPath(List<Vector3> stack)
+    {
+        float lenght = 0;
+        for (int i = 1; i < stack.Count; i++)
+        {
+            lenght += (stack[i] - stack[i - 1]).magnitude;
+        }
+        return lenght;
+    }
+
 }
 

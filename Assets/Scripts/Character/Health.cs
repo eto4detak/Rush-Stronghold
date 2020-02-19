@@ -8,11 +8,12 @@ public class Health : MonoBehaviour
     public float currentHealth;
     public float maxHealth;
     public UnityEvent EventDie = new UnityEvent();
-    public UnityEvent TakeDamageEvent = new UnityEvent();
+    public UnityEvent EventTakeDamage = new UnityEvent();
     public UnityEvent EventSetCommand = new UnityEvent();
-    public List<Renderer> forColor;
     public float armor = 0;
     public Collider body;
+    public Transform center;
+
     [SerializeField]
     private Team team;
     [SerializeField]
@@ -26,6 +27,7 @@ public class Health : MonoBehaviour
         set
         {
             currentHealth = value;
+            
             if (currentHealth <= 0)
             {
                 currentHealth = 0;
@@ -33,14 +35,6 @@ public class Health : MonoBehaviour
             }
         }
     }
-
-
-    private void Start()
-    {
-        SetTeam(team);
-    }
-
-
     public Team GetTeam()
     {
         return team;
@@ -48,26 +42,23 @@ public class Health : MonoBehaviour
 
     public void SetTeam(Team value)
     {
-        if(value == Team.Player1)  ChangeColor(PController.instance.playerMaterial);
-        else  ChangeColor(PController.instance.enemyMaterial);
         team = value;
         EventSetCommand?.Invoke();
     }
 
 
-    private void ChangeColor(Material newColor)
+    public Transform GetCenter()
     {
-        for (int i = 0; i < forColor.Count; i++)
-        {
-            forColor[i].material = newColor;
-        }
+        if (center != null) return center;
+        return transform;
     }
 
-
-    public void TakeDamage(float damage)
+    public void TakeDamage(float _damage)
     {
+        float damage = _damage - armor;
+        damage = damage > 0 ? damage : 0;
         CurrentHealth -= damage;
-        TakeDamageEvent?.Invoke();
+        EventTakeDamage?.Invoke();
     }
 
     private void OnDie()
@@ -85,8 +76,8 @@ public class Health : MonoBehaviour
             soul.Play();
             Destroy(soul.gameObject, mainModule.duration);
         }
+
         Destroy(this);
     }
-
 
 }

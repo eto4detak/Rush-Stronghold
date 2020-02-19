@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6508011355356164248}
   - component: {fileID: 6508011355356164249}
   - component: {fileID: 6508011355356164251}
+  - component: {fileID: 5578277670451907090}
   m_Layer: 0
   m_Name: GManager
   m_TagString: Untagged
@@ -49,14 +50,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnPoint: {fileID: 0}
-  mission:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  units:
-  - {fileID: 0}
-  - {fileID: 0}
+  mission: []
+  units: []
 --- !u!114 &6508011355356164230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99,12 +94,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startDelay: 3
-  endDelay: 3
+  endDelay: 2
   spawnPoints: []
   messageText: {fileID: 0}
   victoryPoints:
   - {fileID: 0}
   - {fileID: 0}
+  startGame: 0
+  restartGame: 0
 --- !u!114 &6508011355356164249
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,14 +126,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c1da852e7ea6b4cbae1ed82eb7b786, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerUnits:
-  - {fileID: 0}
-  - {fileID: 0}
-  enemyUnits:
-  - {fileID: 0}
-  - {fileID: 0}
+  playerUnits: []
+  enemyUnits: []
   EventDeadPlayers:
     m_PersistentCalls:
       m_Calls: []
   playerMaterial: {fileID: 2100002, guid: a68bde0fbbbeacc46862366ba6279265, type: 3}
-  enemyMaterial: {fileID: 2100666, guid: 0c080a1a839ee1649b710110108155bb, type: 3}
+  enemyMaterial: {fileID: 2100026, guid: 9842191d843b75c45bf6e4d9430edd16, type: 3}
+--- !u!114 &5578277670451907090
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6508011355356164227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f6b9cac22ca8f74f81e495a29a476d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _Unions:
+  - Name: War1
+    Team1: 0
+    Union: 1
+    Team2: 3

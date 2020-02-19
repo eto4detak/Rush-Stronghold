@@ -113,16 +113,17 @@ MonoBehaviour:
   EventDie:
     m_PersistentCalls:
       m_Calls: []
-  TakeDamageEvent:
+  EventTakeDamage:
     m_PersistentCalls:
       m_Calls: []
   EventSetCommand:
     m_PersistentCalls:
       m_Calls: []
-  forColor: []
-  armor: 0
+  armor: 10
   body: {fileID: 0}
-  team: 3
+  center: {fileID: 0}
+  team: 2
+  prefabSoul: {fileID: 0}
 --- !u!65 &7979061483950022169
 BoxCollider:
   m_ObjectHideFlags: 0

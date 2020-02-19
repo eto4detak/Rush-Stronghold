@@ -10,6 +10,7 @@ public class MainMenuManager : MonoBehaviour
 {
     [SerializeField] private Button buttonPref;
     [SerializeField] private GameObject levelPanel;
+    [SerializeField] private GameObject settingsPanel;
     [SerializeField] private GameObject contentLevelPanel;
     [SerializeField] private GameObject mainPanel;
     [SerializeField] private GameObject menuPanel;
@@ -20,6 +21,7 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private Button btnLevels;
     [SerializeField] private Button btnExit;
     [SerializeField] private Button btnBack;
+    [SerializeField] private Button btnSettings;
 
 
     #region Singleton
@@ -45,6 +47,7 @@ public class MainMenuManager : MonoBehaviour
         btnContinue.onClick.AddListener(OnContinueGame);
         btnRestart.onClick.AddListener(OnRestartLevel);
         btnLevels.onClick.AddListener(OnOpenLevelPanel);
+        btnSettings.onClick.AddListener(OnOpenSettingsPanel);
         btnExit.onClick.AddListener(OnExitGame);
         btnBack.onClick.AddListener(ShowMainMenu);
         SetTitleLevel();
@@ -59,6 +62,7 @@ public class MainMenuManager : MonoBehaviour
         btnPause.gameObject.SetActive(false);
         menuPanel.gameObject.SetActive(true);
         if (levelPanel) levelPanel.SetActive(false);
+        if (settingsPanel) settingsPanel.SetActive(false);
         if (mainPanel) mainPanel.SetActive(true);
 
     }
@@ -71,6 +75,11 @@ public class MainMenuManager : MonoBehaviour
     public void OnOpenLevelPanel()
     {
         if (levelPanel) levelPanel.SetActive(true);
+        if (mainPanel) mainPanel.SetActive(false);
+    }
+    public void OnOpenSettingsPanel()
+    {
+        if (settingsPanel) settingsPanel.SetActive(true);
         if (mainPanel) mainPanel.SetActive(false);
     }
 
@@ -116,11 +125,13 @@ public class MainMenuManager : MonoBehaviour
 
     private void SetupLevelsInPanel()
     {
-        for (int i = 1; i < SceneManager.sceneCountInBuildSettings; i++)
+        int lvlCount = SaveLoad.GetInstance().pData.maxLevel;
+        for (int i = 1; i < lvlCount+1; i++)
         {
             Button btnLevel = Instantiate(buttonPref, contentLevelPanel.transform);
             btnLevel.gameObject.SetActive(true);
-            btnLevel.GetComponentInChildren<TextMeshProUGUI>().text = "Level " + i.ToString();
+            int lvl = i;
+            btnLevel.GetComponentInChildren<TextMeshProUGUI>().text = "Level " + lvl.ToString();
             btnLevel.name = "" + i;
             btnLevel.onClick.AddListener(() => LoadLevel(btnLevel.name));
         }

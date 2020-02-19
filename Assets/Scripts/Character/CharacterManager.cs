@@ -6,23 +6,28 @@ using UnityEngine.Events;
 
 public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
 {
-    public CharacterContrMovement movement;
-    public CharacterAttack armament;
-    public CharacterCommand command;
+    private CharacterCommand command;
     public Animator animator;
     public Health health;
     public float targetRadius = 1.5f;
     public CharacterEvent die = new CharacterEvent();
     public CharacterEvent EventStart = new CharacterEvent();
     public bool isFree = true;
+    public CharacterContrMovement movement;
+    [HideInInspector]
+    public List<CharacterCommand> commands = new List<CharacterCommand>();
 
+    [SerializeField] private ParticleSystem psSelected;
     private readonly int hashDieAnim = Animator.StringToHash("Die");
+
+    public CharacterAttack Armament { get; private set; }
+    public CharacterCommand Command { get => command; set => command = value; }
 
     private void Awake()
     {
+        Armament = GetComponent<CharacterAttack>();
         movement = GetComponent<CharacterContrMovement>();
-        //if(m != null) movement = m;
-        //else movement = GetComponent<CharacterContrMovement>();
+        if(psSelected) psSelected.gameObject.SetActive(false);
     }
 
     private void Start()
@@ -34,13 +39,61 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
 
     private void Update()
     {
-        if (command == null) return;
-        if(command.CheckCanCancel())
+        if (Command == null)
         {
-            command = new GuardCommand(this);
+            commands.RemoveAll(x => x == null);
+            if (commands.Count > 0)
+            {
+                Command = commands[0];
+            }
+            else
+            {
+                return;
+            }
         }
-        command.DoCommand();
 
+        if(Command.CheckCanCancel())
+        {
+            commands.Remove(Command);
+            if (commands.Count > 0)
+            {
+                commands.RemoveAll(x => x == null);
+                Command = commands[0];
+            }
+            else
+            {
+                Command = new GuardCommand(this);
+            }
+        }
+        Command.DoCommand();
+
+
+    }
+
+
+    public void PushCommand(CharacterCommand _command)
+    {
+        List < CharacterCommand > newCommands = new List<CharacterCommand>();
+        newCommands.Add(_command);
+
+        if (commands.Count > 0)
+            newCommands.Add(commands[commands.Count - 1]);
+        else newCommands.Add(command);
+        commands = newCommands;
+        command = _command;
+    }
+
+
+    public void SetPathCommand(List<Vector3> path)
+    {
+        if (Armament.AttackType is ArcherType)
+        {
+            Command = new MoveCommand(this, path);
+        }
+        else
+        {
+            Command = new RushCommand(this, path);
+        }
     }
 
     public void EnableUnit()
@@ -51,21 +104,21 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
     public void DesableUnit()
     {
         if(movement != null) movement.enabled = false;
-        enabled = false;
+        //enabled = false;
     }
 
 
     public void MoveTo(Transform target)
     {
         isFree = false;
-        armament.NoAttack();
+        Armament.NoAttack();
         movement.MoveTo(target);
     }
 
     public void MoveTo(Vector3 target)
     {
         isFree = false;
-        armament.NoAttack();
+        Armament.NoAttack();
         movement.MoveTo(target);
     }
 
@@ -78,13 +131,13 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
     {
         isFree = false;
         movement.Stop();
-        armament.Attack(newTarget);
+        Armament.Attack(newTarget);
     }
 
     public void NoAttack()
     {
         isFree = true;
-        armament.NoAttack();
+        Armament.NoAttack();
     }
     public void Stop()
     {
@@ -99,7 +152,7 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
         for (int i = 0; i < findStack.Length; i++)
         {
             tempUnit = findStack[i].GetComponent<Health>();
-            if (tempUnit == null || tempUnit.GetTeam() == health.GetTeam()) continue;
+            if (tempUnit == null || !Unions.instance.CheckEnemies(tempUnit.GetTeam(), health.GetTeam()) ) continue;
             found.Add(tempUnit);
         }
         return found;
@@ -127,9 +180,10 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
         return transform;
     }
 
-    public Health FindTarget()
+    public Health FindTarget(float radius = 0)
     {
-        List<Health> enemies = FilterEnemy(Physics.OverlapSphere(transform.position, targetRadius));
+        if (radius == 0) radius = targetRadius;
+        List<Health> enemies = FilterEnemy(Physics.OverlapSphere(transform.position, radius));
         return this.GetClosest(enemies) as Health;
     }
 
@@ -137,9 +191,10 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
     {
         List<CharacterManager> group = new List<CharacterManager> { this };
         Vector3 dirToTarget;
-        float groupRadius = 10f;
+        float groupRadius = 7f;
         for (int i = 0; i < stack.Count; i++)
         {
+            if (stack[i] == null) continue;
             if (group.Exists(x => x.Equals(stack[i]))) continue;
             dirToTarget = stack[i].transform.position - transform.position;
             if (dirToTarget.sqrMagnitude < groupRadius * groupRadius)
@@ -151,17 +206,26 @@ public class CharacterManager : MonoBehaviour, IMovable, IAttack, IUnit
         return group;
     }
 
+    public void PlaySelected()
+    {
+        if (psSelected == null) return;
+        psSelected.gameObject.SetActive(true);
+        psSelected.Play();
+    }
+
     private void OnDie()
     {
         GetComponent<CharacterController>().enabled = false;
         GetComponent<CharacterContrMovement>().enabled = false;
         GetComponent<Collider>().enabled = false;
-        Destroy(this);
-        armament.enabled = false;
+        Armament.enabled = false;
         enabled = false;
-        animator.SetBool(hashDieAnim, true);
+        animator.SetTrigger(hashDieAnim);
         die?.Invoke(this);
+        Destroy(this);
     }
+
+
 }
 
 [System.Serializable]

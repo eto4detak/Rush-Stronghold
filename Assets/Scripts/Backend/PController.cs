@@ -29,7 +29,6 @@ public class PController : MonoBehaviour
         public Team team;
         public Material color;
     }
-
     public List<CharacterManager> playerUnits = new List<CharacterManager>();
     public List<CharacterManager> enemyUnits = new List<CharacterManager>();
     public UnityEvent EventDeadPlayers = new UnityEvent();
@@ -38,25 +37,10 @@ public class PController : MonoBehaviour
 
     private void Start()
     {
-        StartUnit();
+       // StartUnit();
     }
 
 
-
-
-
-    public void AttachedUnit(CharacterManager unit)
-    {
-        RemoveUnit(unit);
-        if (unit.GetTeam() == Team.Player1)
-        {
-            if(!playerUnits.Exists(x => x.Equals(unit))) playerUnits.Add(unit);
-        }
-        else if (unit.GetTeam() == Team.Hostile)
-        {
-            if (!enemyUnits.Exists(x => x.Equals(unit))) enemyUnits.Add(unit);
-        }
-    }
 
 
     public CharacterManager GetClosestFreePlayerUnit(Vector3 target)
@@ -67,7 +51,7 @@ public class PController : MonoBehaviour
         for (int i = 0; i < playerUnits.Count; i++)
         {
             if (playerUnits[i] == null) continue;
-            if (playerUnits[i].armament.isAttack) continue;
+            if (playerUnits[i].Armament.isAttack) continue;
             distance = (target - playerUnits[i].transform.position).magnitude;
             if (distance < mindistance)
             {
@@ -95,6 +79,23 @@ public class PController : MonoBehaviour
         return enemyMaterial;
     }
 
+
+    public List<CharacterManager> GetCommandStack(Team team)
+    {
+        if (team == Team.Player1) return playerUnits;
+        else return enemyUnits;
+    }
+
+    public void AttachedUnit(CharacterManager unit)
+    {
+        List<CharacterManager> stack = GetCommandStack(unit.GetTeam());
+        if (!stack.Exists(x => x.Equals(unit)))
+        {
+            GetCommandStack(unit.GetTeam()).Add(unit);
+            unit.die.AddListener(RemoveUnit);
+        }
+    }
+
     private void RemoveUnit(CharacterManager removed)
     {
         if(removed.GetTeam() == Team.Player1)
@@ -107,19 +108,19 @@ public class PController : MonoBehaviour
             enemyUnits.Remove(removed);
         }
     }
-    private void StartUnit()
-    {
-        for (int i = 0; i < playerUnits.Count; i++)
-        {
-            if (playerUnits[i] != null)
-                playerUnits[i].die.AddListener(RemoveUnit);
+    //private void StartUnit()
+    //{
+    //    for (int i = 0; i < playerUnits.Count; i++)
+    //    {
+    //        if (playerUnits[i] != null)
+    //            playerUnits[i].die.AddListener(RemoveUnit);
 
-        }
-        for (int i = 0; i < enemyUnits.Count; i++)
-        {
-            if (enemyUnits[i] != null)
-                enemyUnits[i].die.AddListener(RemoveUnit);
-        }
-    }
+    //    }
+    //    for (int i = 0; i < enemyUnits.Count; i++)
+    //    {
+    //        if (enemyUnits[i] != null)
+    //            enemyUnits[i].die.AddListener(RemoveUnit);
+    //    }
+    //}
 }
 
